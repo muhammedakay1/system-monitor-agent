@@ -1,8 +1,14 @@
+import argparse
 import logging
 import json
 import sys
 from collector import collect_metrics
 from alerts import check_thresholds, THRESHOLDS
+
+
+parser=argparse.ArgumentParser(description="Monitor CPU, memory and disk usage.")
+parser.add_argument("--output",default="report.json",help="Path of the JSON report")
+args=parser.parse_args()
 
 logging.basicConfig(
     filename="monitor.log",
@@ -20,7 +26,7 @@ report={
     "alerts":alerts
 }
 
-with open("report.json","w") as f:
+with open(args.output,"w") as f:
     json.dump(report,f,indent=4)
 
 print("CPU:", metrics["cpu"], "%")
