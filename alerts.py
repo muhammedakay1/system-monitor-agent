@@ -1,7 +1,7 @@
 from collector import collect_metrics
 
 THRESHOLDS = {"cpu": 80, "memory": 80, "disk": 90}
-
+SSH_FAIL_LIMIT = 3
 
 def check_thresholds(metrics, thresholds):
     alerts = []
