@@ -1,6 +1,7 @@
 from alerts import check_thresholds
 
 
+
 def test_no_alert_when_all_below_limit():
     metrics = {"cpu": 10, "memory": 40, "disk": 30}
     thresholds = {"cpu": 80, "memory": 80, "disk": 90}
