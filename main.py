@@ -27,11 +27,17 @@ metrics = collect_metrics()
 alerts = check_thresholds(metrics, THRESHOLDS)
 
 if args.auth_log:
-    failed_logs=parse_auth_file(args.auth_log)
+    try:  
+        failed_logs=parse_auth_file(args.auth_log)
+    except FileNotFoundError:
+        print(f"WARNING: {args.auth_log} is not found ")
+        logging.warning(f"{args.auth_log} is not found ")
+        sys.exit(1)
     ip_counts=count_failed_by_ip(failed_logs)
     for ip, count in ip_counts.items():
         if count>=SSH_FAIL_LIMIT:
             alerts.append(f"ssh: {count} failed logins from {ip}")
+
 
 report = {"metrics": metrics, "alerts": alerts}
 
