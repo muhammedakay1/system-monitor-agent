@@ -2,6 +2,7 @@ import argparse
 import logging
 import json
 import sys
+import time
 from collector import collect_metrics
 from alerts import check_thresholds, THRESHOLDS,SSH_FAIL_LIMIT
 from auth_parser import parse_auth_file, count_failed_by_ip
@@ -13,6 +14,7 @@ from auth_parser import parse_auth_file, count_failed_by_ip
 parser = argparse.ArgumentParser(description="Monitor CPU, memory and disk usage.")
 parser.add_argument("--output", default="report.json", help="Path of the JSON report")
 parser.add_argument("--auth-log", default=None, help="Path of an auth.log file to analyze")
+parser.add_argument("--interval", type=int ,default=0, help="Seconds between checks (0 = run once)")
 args = parser.parse_args()
 
 logging.basicConfig(
@@ -62,4 +64,9 @@ def run_once(args):
         logging.info("All metrics are normal")
         return 0
 
-sys.exit(run_once(args))
+if args.interval>0:
+    while True:
+        run_once(args)
+        time.sleep(args.interval)
+else:
+    sys.exit(run_once(args))
