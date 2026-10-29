@@ -65,8 +65,12 @@ def run_once(args):
         return 0
 
 if args.interval>0:
-    while True:
-        run_once(args)
-        time.sleep(args.interval)
+    try:
+        while True:
+            run_once(args)
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        print("Monitor stopped")
+        logging.info("Monitor stopped")
 else:
     sys.exit(run_once(args))
