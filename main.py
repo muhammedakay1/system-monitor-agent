@@ -23,38 +23,43 @@ logging.basicConfig(
 
 logging.info("Monitor started")
 
-metrics = collect_metrics()
-alerts = check_thresholds(metrics, THRESHOLDS)
 
-if args.auth_log:
-    try:  
-        failed_logs=parse_auth_file(args.auth_log)
-    except FileNotFoundError:
-        print(f"WARNING: {args.auth_log} is not found ")
-        logging.warning(f"{args.auth_log} is not found ")
-        sys.exit(1)
-    ip_counts=count_failed_by_ip(failed_logs)
-    for ip, count in ip_counts.items():
-        if count>=SSH_FAIL_LIMIT:
-            alerts.append(f"ssh: {count} failed logins from {ip}")
+def run_once(args):       
+    metrics = collect_metrics()
+    alerts = check_thresholds(metrics, THRESHOLDS)
 
-
-report = {"metrics": metrics, "alerts": alerts}
-
-with open(args.output, "w") as f:
-    json.dump(report, f, indent=4)
-
-print("CPU:", metrics["cpu"], "%")
-print("RAM:", metrics["memory"], "%")
-print("DISK:", metrics["disk"], "%")
+    if args.auth_log:
+        try:  
+            failed_logs=parse_auth_file(args.auth_log)
+        except FileNotFoundError:
+            print(f"WARNING: {args.auth_log} is not found ")
+            logging.warning(f"{args.auth_log} is not found ")
+            sys.exit(1)
+        ip_counts=count_failed_by_ip(failed_logs)
+        for ip, count in ip_counts.items():
+            if count>=SSH_FAIL_LIMIT:
+                alerts.append(f"ssh: {count} failed logins from {ip}")
 
 
-if alerts:
-    for alert in alerts:
-        print(f"WARNING: {alert}")
-        logging.warning(alert)
-    sys.exit(2)
+    report = {"metrics": metrics, "alerts": alerts}
 
-else:
-    print("All metrics are normal")
-    logging.info("All metrics are normal")
+    with open(args.output, "w") as f:
+        json.dump(report, f, indent=4)
+
+    print("CPU:", metrics["cpu"], "%")
+    print("RAM:", metrics["memory"], "%")
+    print("DISK:", metrics["disk"], "%")
+
+
+    if alerts:
+        for alert in alerts:
+            print(f"WARNING: {alert}")
+            logging.warning(alert)
+        return 2
+
+    else:
+        print("All metrics are normal")
+        logging.info("All metrics are normal")
+        return 0
+
+sys.exit(run_once(args))
