@@ -166,6 +166,7 @@ Notes:
 - `logs/sample_auth.log`: sample SSH log
 - `tests/`: automated tests (pytest)
 - `.github/workflows/tests.yml`: runs the tests on every push
+- `Dockerfile`: container image definition
 
 ## Limitations
 
@@ -178,8 +179,7 @@ Notes:
 
 ## Roadmap
 
-- Run the agent in a Docker container
-- Deploy it on a Google Cloud virtual machine and analyze real SSH logs
+- Deploy it on a AWS virtual machine and analyze real SSH logs
 
 ## Disclaimer
 
