@@ -117,6 +117,46 @@ A sample file is included in `logs/sample_auth.log`. On Linux the real file is u
 python -m pytest
 ```
 
+
+## Docker
+
+Build the image:
+
+```bash
+docker build -t system-monitor .
+```
+
+Run once with the sample SSH log:
+
+```bash
+docker run --rm system-monitor
+```
+
+Run continuously in the background and save the report to a local folder:
+
+```bash
+mkdir -p data
+docker run -d --name agent -v $(pwd)/data:/data system-monitor \
+  python main.py --interval 5 --auth-log logs/sample_auth.log --output /data/report.json
+```
+
+Watch the output and stop the container:
+
+```bash
+docker logs agent
+docker stop agent
+docker rm agent
+```
+
+Notes:
+
+- The container runs as a non-root user (`appuser`).
+- `PYTHONUNBUFFERED=1` is set so the output shows up in `docker logs` immediately.
+- Inside the container, CPU, memory and disk values describe the container's Linux environment, not the host.
+- Timestamps inside the container use UTC.
+
+
+
 ## Project structure
 
 - `main.py`: command-line entry point, runs the checks, writes the report and the log
