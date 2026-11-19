@@ -1,4 +1,5 @@
 import psutil
+import os
 from datetime import datetime
 
 
@@ -14,9 +15,10 @@ def get_memory_percent():
 
 
 def get_disk_percent():
-    disk = psutil.disk_usage("/")
+    path = os.environ.get("DISK_PATH", "/")
+    disk = psutil.disk_usage(path)
     disk_usage = disk.percent
-    return disk_usage
+    return disk_usage 
 
 
 def collect_metrics():
