@@ -2,22 +2,24 @@
 
 ![Tests](https://github.com/muhammedakay1/system-monitor-agent/actions/workflows/tests.yml/badge.svg)
 
-A small Python command-line agent that checks CPU, memory and disk usage, raises alerts when a threshold is exceeded, and can analyze an SSH `auth.log` file for repeated failed logins. Results are printed, logged and saved as a JSON report.
+A small Python agent that checks CPU, memory and disk usage, raises alerts when a threshold is exceeded, and analyzes an SSH `auth.log` file for repeated failed logins. Results are printed, logged and saved as a JSON report. It runs as a command-line tool or in a Docker container, and was deployed and tested on an AWS EC2 instance.
 
 ## Features
 
 - Reads CPU, memory and disk usage with `psutil`
-- Compares each value with a configurable threshold and raises an alert when it is exceeded
+- Compares each value with a threshold and raises an alert when it is exceeded
 - Parses SSH `auth.log` files and alerts when one IP address has too many failed logins
 - Writes a JSON report and a log file (`monitor.log`)
-- Can run once or repeat every N seconds
+- Runs once or repeats every N seconds
 - Returns exit codes that scripts and containers can use
+- Runs in Docker as a non-root user
 - Automated tests with pytest, run on every push by GitHub Actions
 
 ## Requirements
 
 - Python 3
 - The packages in `requirements.txt` (`psutil`, `pytest`)
+- Docker (optional)
 
 ## Installation
 
@@ -48,8 +50,6 @@ Check every 10 seconds until stopped with Ctrl + C:
 ```bash
 python main.py --interval 10
 ```
-
-Options:
 
 | Option | Description | Default |
 |---|---|---|
@@ -117,45 +117,70 @@ A sample file is included in `logs/sample_auth.log`. On Linux the real file is u
 python -m pytest
 ```
 
-
 ## Docker
 
 Build the image:
 
 ```bash
-docker build -t system-monitor .
+docker build -t system-monitor-agent .
 ```
 
-Run once with the sample SSH log:
-
-```bash
-docker run --rm system-monitor
-```
-
-Run continuously in the background and save the report to a local folder:
+Run it in the background on a Linux host, with the JSON reports saved to a local folder and the real SSH log mounted read-only:
 
 ```bash
 mkdir -p data
-docker run -d --name agent -v $(pwd)/data:/data system-monitor \
-  python main.py --interval 5 --auth-log logs/sample_auth.log --output /data/report.json
+sudo docker run -d \
+  --name system-monitor-agent \
+  --restart unless-stopped \
+  --group-add 4 \
+  -v "$PWD/data:/data" \
+  -v "$PWD:/host:ro" \
+  -v /var/log/auth.log:/var/log/auth.log:ro \
+  system-monitor-agent:latest
 ```
+
+What the options do:
+
+- `-v "$PWD/data:/data"` keeps the JSON reports on the host.
+- `-v "$PWD:/host:ro"` gives the agent read-only access to the host file system, so it measures the host disk and not the container's own disk.
+- `-v /var/log/auth.log:/var/log/auth.log:ro` lets the agent read the real SSH log.
+- `--group-add 4` adds the `adm` group (Ubuntu) so the non-root user can read `auth.log`.
+- `--restart unless-stopped` starts the container again after a reboot or a crash.
 
 Watch the output and stop the container:
 
 ```bash
-docker logs agent
-docker stop agent
-docker rm agent
+sudo docker logs system-monitor-agent
+sudo docker stop system-monitor-agent
+sudo docker rm system-monitor-agent
 ```
 
 Notes:
 
-- The container runs as a non-root user (`appuser`).
+- The container runs as a non-root user (`appuser`) and checks the system every 60 seconds.
 - `PYTHONUNBUFFERED=1` is set so the output shows up in `docker logs` immediately.
-- Inside the container, CPU, memory and disk values describe the container's Linux environment, not the host.
 - Timestamps inside the container use UTC.
 
+## Deployment on AWS EC2
 
+The agent was deployed and tested on an AWS EC2 instance (`t3.micro`, Ubuntu, region `eu-central-1`) and run in Docker as shown above.
+
+- SSH access was limited to a single IP address in the security group.
+- Docker was installed on the instance and the image was built there.
+- The host's RAM and disk values were checked against the values the container reported.
+- The container read the real `/var/log/auth.log` through the read-only mount.
+- The container restarts automatically (`--restart unless-stopped`).
+
+Example log output from the instance:
+
+```
+CPU: 1.0 %
+RAM: 47.2 %
+DISK: 40.8 %
+All metrics are normal
+```
+
+The instance was terminated after the tests to avoid costs.
 
 ## Project structure
 
@@ -171,15 +196,17 @@ Notes:
 ## Limitations
 
 - Thresholds are fixed in the code and cannot be changed from the command line
-- Disk usage is read for `/`. On macOS this is only the system volume, so the value can look lower than the real disk usage
-- Only password-based SSH log lines in the format shown above are recognized
+- Disk usage is read from `/host`, the host folder mounted into the container. Outside Docker, this path must exist
+- Only password-based SSH log lines in the format shown above are recognized (no `Invalid user ... from ...` lines yet)
 - SSH failures are counted over the whole file, not within a time window
 - The log timestamp has no year, so it is not parsed
 - The report file is overwritten on every run
 
 ## Roadmap
 
-- Deploy it on a AWS virtual machine and analyze real SSH logs
+- Recognize `Invalid user` lines in `auth.log`
+- Count failed logins within a time window
+- Make the thresholds configurable from the command line
 
 ## Disclaimer
 

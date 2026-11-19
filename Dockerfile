@@ -4,6 +4,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN useradd -m appuser && chown -R appuser /app
-USER appuser
 COPY . .
+USER appuser
 CMD ["python","main.py","--auth-log","logs/sample_auth.log"]
