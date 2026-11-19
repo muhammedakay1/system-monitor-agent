@@ -1,13 +1,5 @@
 # System Monitor Agent
 
-## Screenshots
-
-### System Monitoring
-![Monitoring Output](docs/images/monitor-output.png)
-
-### JSON Report
-![JSON Report](docs/images/json-report.png)
-
 ![Tests](https://github.com/muhammedakay1/system-monitor-agent/actions/workflows/tests.yml/badge.svg)
 
 A small Python agent that checks CPU, memory and disk usage, raises alerts when a threshold is exceeded, and analyzes an SSH `auth.log` file for repeated failed logins. Results are printed, logged and saved as a JSON report. It runs as a command-line tool or in a Docker container, and was deployed and tested on an AWS EC2 instance.
@@ -82,8 +74,6 @@ DISK: 19.0 %
 WARNING: memory is at 82.7% (limit is 80)
 WARNING: ssh: 4 failed logins from 203.0.113.5
 ```
-   ![Monitor output](docs/monitor-output.png)
-
 ## Report format
 
 Each run writes (and overwrites) a JSON report:
@@ -102,7 +92,7 @@ Each run writes (and overwrites) a JSON report:
     ]
 }
 ```
-   ![JSON report](docs/json-report.png)
+
 
 ## How detection works
 
